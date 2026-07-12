@@ -5,7 +5,8 @@ LIBRARY_FILE = "library.txt"
 BORROW_FILE = "borrow_log.txt"
 
 
-# Get book details from library.txt
+# ---------------- Get Book Details ----------------
+
 def get_book(book_id):
 
     file = open(LIBRARY_FILE, "r")
@@ -30,7 +31,8 @@ def get_book(book_id):
 
 
 
-# Borrow book
+# ---------------- Borrow Book ----------------
+
 def borrow(book_id, student_id):
 
     book = get_book(book_id)
@@ -43,39 +45,52 @@ def borrow(book_id, student_id):
 
 
 
-    # Check existing borrow records
+    # Check whether book is already borrowed
 
-    file = open(BORROW_FILE, "r")
+    try:
 
-
-    for line in file:
-
-        data = line.strip().split("|")
+        file = open(BORROW_FILE, "r")
 
 
-        if data[0] == str(book_id) and data[2] == "BORROWED":
+        for line in file:
 
-            file.close()
-
-            raise ValueError(
-                "Book is unavailable for borrowing. It has already been borrowed."
-            )
+            data = line.strip().split("|")
 
 
-    file.close()
+            if (
+                data[0] == str(book_id)
+                and data[2] == "BORROWED"
+            ):
+
+                file.close()
+
+                raise ValueError(
+                    "Book already on loan"
+                )
+
+
+        file.close()
+
+
+    except FileNotFoundError:
+
+        # First borrow, file does not exist
+        pass
 
 
 
-    # Add new record
+    # Add borrow record
 
     file = open(BORROW_FILE, "a")
 
 
-    date = datetime.now().strftime("%Y-%m-%d")
+    borrow_date = datetime.now().strftime(
+        "%Y-%m-%d"
+    )
 
 
     file.write(
-        f"{book_id}|{student_id}|BORROWED|{date}\n"
+        f"{book_id}|{student_id}|BORROWED|{borrow_date}\n"
     )
 
 
@@ -88,42 +103,63 @@ def borrow(book_id, student_id):
     print("Book ID :", book["id"])
     print("Title   :", book["title"])
     print("Author  :", book["author"])
+    print("Student :", student_id)
 
 
 
-# Return book
+# ---------------- Return Book ----------------
+
 def return_book(book_id):
 
-    file = open(BORROW_FILE, "r")
+
+    try:
+
+        file = open(BORROW_FILE, "r")
 
 
-    records = file.readlines()
+        records = file.readlines()
 
 
-    file.close()
+        file.close()
+
+
+
+    except FileNotFoundError:
+
+        print("No borrow records found")
+
+        return
+
 
 
     updated_records = []
 
-    found = False
+    returned = False
 
 
 
     for record in records:
 
+
         data = record.strip().split("|")
 
 
-        if data[0] == str(book_id) and data[2] == "BORROWED":
+
+        if (
+            data[0] == str(book_id)
+            and data[2] == "BORROWED"
+        ):
 
 
             data[2] = "RETURNED"
+
 
             data.append(
                 datetime.now().strftime("%Y-%m-%d")
             )
 
-            found = True
+
+            returned = True
 
 
 
@@ -145,27 +181,32 @@ def return_book(book_id):
 
 
 
-    if found:
+    if returned:
 
         print("Book returned successfully")
 
     else:
 
-        print("Book not found")
+        print(
+            "Book not found or already returned"
+        )
 
 
 
-# Display books
+# ---------------- Display Books ----------------
+
 def display_books():
+
 
     file = open(LIBRARY_FILE, "r")
 
 
     print("\nLibrary Books")
-    print("----------------")
+    print("-----------------------")
 
 
     for line in file:
+
 
         data = line.strip().split("|")
 
@@ -173,9 +214,9 @@ def display_books():
         print(
             "ID:",
             data[0],
-            "Title:",
+            "| Title:",
             data[1],
-            "Author:",
+            "| Author:",
             data[2]
         )
 
@@ -184,17 +225,58 @@ def display_books():
 
 
 
-# Main Program
+# ---------------- View Borrow Log ----------------
+
+def view_borrow_log():
+
+
+    try:
+
+        file = open(BORROW_FILE, "r")
+
+
+        print("\nBorrow Log")
+        print("-----------------------")
+
+
+        for line in file:
+
+            print(line.strip())
+
+
+        file.close()
+
+
+
+    except FileNotFoundError:
+
+        print("No borrow records")
+
+
+
+# ---------------- Main Program ----------------
+
 
 while True:
 
-    print("\n1. View Books")
+
+    print("\n===== Library Management System =====")
+
+    print("1. View Books")
+
     print("2. Borrow Book")
+
     print("3. Return Book")
-    print("4. Exit")
+
+    print("4. View Borrow Log")
+
+    print("5. Exit")
 
 
-    choice = input("Enter choice: ")
+
+    choice = input(
+        "Enter your choice: "
+    )
 
 
 
@@ -206,9 +288,16 @@ while True:
 
     elif choice == "2":
 
-        book_id = input("Enter Book ID: ")
 
-        student_id = input("Enter Student ID: ")
+        book_id = input(
+            "Enter Book ID: "
+        )
+
+
+        student_id = input(
+            "Enter Student ID: "
+        )
+
 
 
         try:
@@ -218,17 +307,23 @@ while True:
                 student_id
             )
 
+
         except ValueError as e:
 
-            print(e)
+            print(
+                "Error:",
+                e
+            )
 
 
 
     elif choice == "3":
 
+
         book_id = input(
-            "Enter Book ID: "
+            "Enter Book ID to return: "
         )
+
 
         return_book(book_id)
 
@@ -236,9 +331,22 @@ while True:
 
     elif choice == "4":
 
+        view_borrow_log()
+
+
+
+    elif choice == "5":
+
+        print(
+            "Thank you!"
+        )
+
         break
+
 
 
     else:
 
-        print("Invalid choice")
+        print(
+            "Invalid choice"
+        )
