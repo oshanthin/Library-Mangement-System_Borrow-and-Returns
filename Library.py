@@ -58,7 +58,7 @@ def borrow(book_id, student_id):
             file.close()
 
             raise ValueError(
-                "Book already on loan"
+                "Book is unavailable for borrowing. It has already been borrowed."
             )
 
 
