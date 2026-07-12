@@ -1,167 +1,244 @@
-# Library Directory & Search System
-# Using BST, Linked List, File Handling and Exceptions
+from datetime import datetime
 
 
-# Book Node for Linked List
-class Book:
-    def __init__(self, title, author):
-        self.title = title
-        self.author = author
-        self.next = None
+LIBRARY_FILE = "library.txt"
+BORROW_FILE = "borrow_log.txt"
 
 
-# BST Node
-class BSTNode:
-    def __init__(self, book):
-        self.book = book
-        self.left = None
-        self.right = None
+# Get book details from library.txt
+def get_book(book_id):
+
+    file = open(LIBRARY_FILE, "r")
+
+    for line in file:
+
+        data = line.strip().split("|")
+
+        if data[0] == str(book_id):
+
+            file.close()
+
+            return {
+                "id": data[0],
+                "title": data[1],
+                "author": data[2]
+            }
+
+    file.close()
+
+    return None
 
 
-# Insert book into BST
-def insert(root, book):
 
-    if root is None:
-        return BSTNode(book)
+# Borrow book
+def borrow(book_id, student_id):
 
-    if book.title.lower() < root.book.title.lower():
-        root.left = insert(root.left, book)
-
-    else:
-        root.right = insert(root.right, book)
-
-    return root
+    book = get_book(book_id)
 
 
-# Search book using BST
-def search(root, title):
+    if book is None:
 
-    if root is None:
-        return None
-
-    if title.lower() == root.book.title.lower():
-        return root.book
-
-    elif title.lower() < root.book.title.lower():
-        return search(root.left, title)
-
-    else:
-        return search(root.right, title)
+        print("Book not found")
+        return
 
 
-# Display books using inorder traversal
-def display_catalog(root):
 
-    if root:
-        display_catalog(root.left)
+    # Check existing borrow records
 
-        print(
-            "Title:",
-            root.book.title,
-            "| Author:",
-            root.book.author
+    file = open(BORROW_FILE, "r")
+
+
+    for line in file:
+
+        data = line.strip().split("|")
+
+
+        if data[0] == str(book_id) and data[2] == "BORROWED":
+
+            file.close()
+
+            raise ValueError(
+                "Book already on loan"
+            )
+
+
+    file.close()
+
+
+
+    # Add new record
+
+    file = open(BORROW_FILE, "a")
+
+
+    date = datetime.now().strftime("%Y-%m-%d")
+
+
+    file.write(
+        f"{book_id}|{student_id}|BORROWED|{date}\n"
+    )
+
+
+    file.close()
+
+
+
+    print("\nBook Borrowed Successfully")
+    print("---------------------------")
+    print("Book ID :", book["id"])
+    print("Title   :", book["title"])
+    print("Author  :", book["author"])
+
+
+
+# Return book
+def return_book(book_id):
+
+    file = open(BORROW_FILE, "r")
+
+
+    records = file.readlines()
+
+
+    file.close()
+
+
+    updated_records = []
+
+    found = False
+
+
+
+    for record in records:
+
+        data = record.strip().split("|")
+
+
+        if data[0] == str(book_id) and data[2] == "BORROWED":
+
+
+            data[2] = "RETURNED"
+
+            data.append(
+                datetime.now().strftime("%Y-%m-%d")
+            )
+
+            found = True
+
+
+
+        updated_records.append(
+            "|".join(data)
         )
 
-        display_catalog(root.right)
 
 
-# Load catalog from file
-def load_catalog(filename):
-
-    root = None
-
-    try:
-
-        with open(filename, "r") as file:
-
-            for line in file:
-
-                title, author = line.strip().split("|")
-
-                book = Book(title, author)
-
-                root = insert(root, book)
+    file = open(BORROW_FILE, "w")
 
 
-    except FileNotFoundError:
+    for record in updated_records:
 
-        print("No catalog file found. Starting empty library.")
+        file.write(record + "\n")
 
-    return root
+
+    file.close()
 
 
 
-# Save new book to file
-def add_book(filename):
+    if found:
 
-    title = input("Enter book title: ")
-    author = input("Enter author: ")
+        print("Book returned successfully")
 
-    try:
+    else:
 
-        with open(filename, "a") as file:
+        print("Book not found")
 
-            file.write(title + "|" + author + "\n")
 
-        print("Book added successfully")
 
-    except Exception as e:
+# Display books
+def display_books():
 
-        print("Error:", e)
+    file = open(LIBRARY_FILE, "r")
+
+
+    print("\nLibrary Books")
+    print("----------------")
+
+
+    for line in file:
+
+        data = line.strip().split("|")
+
+
+        print(
+            "ID:",
+            data[0],
+            "Title:",
+            data[1],
+            "Author:",
+            data[2]
+        )
+
+
+    file.close()
 
 
 
 # Main Program
 
-catalog = load_catalog("library.txt")
-
-
 while True:
 
-    print("\n===== Library Directory =====")
-    print("1. Search Book")
-    print("2. Display All Books")
-    print("3. Add New Book")
+    print("\n1. View Books")
+    print("2. Borrow Book")
+    print("3. Return Book")
     print("4. Exit")
 
 
     choice = input("Enter choice: ")
 
 
+
     if choice == "1":
 
-        title = input("Enter book title: ")
+        display_books()
 
-        result = search(catalog, title)
-
-        if result:
-            print("\nBook Found")
-            print("Title:", result.title)
-            print("Author:", result.author)
-
-        else:
-            print("Book not found")
 
 
     elif choice == "2":
 
-        print("\nLibrary Catalog")
-        display_catalog(catalog)
+        book_id = input("Enter Book ID: ")
+
+        student_id = input("Enter Student ID: ")
+
+
+        try:
+
+            borrow(
+                book_id,
+                student_id
+            )
+
+        except ValueError as e:
+
+            print(e)
+
 
 
     elif choice == "3":
 
-        add_book("library.txt")
+        book_id = input(
+            "Enter Book ID: "
+        )
 
-        catalog = load_catalog("library.txt")
+        return_book(book_id)
+
 
 
     elif choice == "4":
 
-        print("Program Closed")
         break
 
 
     else:
 
-        print("Invalid option")
+        print("Invalid choice")
